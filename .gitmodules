@@ -1,3 +1,3 @@
-[submodule "data/tsp"]
+[submodule "resource/tsp"]
 	path = data/tsp
 	url = https://github.com/mastqe/tsplib
