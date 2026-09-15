@@ -170,7 +170,7 @@ class Visualizer:
         sm = cm.ScalarMappable(cmap=self.cmap_heat, norm=self.norm)
         sm.set_array([])
         cbar = plt.colorbar(sm, ax=ax, fraction=0.04, pad=0.08, orientation='horizontal')
-        cbar.set_label('profit', fontsize=12)
+        cbar.set_label('Reward', fontsize=12)
         
         self._finalize_plot(plt)
 
@@ -257,7 +257,7 @@ class Visualizer:
         sm = cm.ScalarMappable(cmap=self.cmap_heat, norm=self.norm)
         sm.set_array([])
         cbar = plt.colorbar(sm, ax=ax, fraction=0.04, pad=0.08, orientation='horizontal')
-        cbar.set_label('profit', fontsize=12)
+        cbar.set_label('Reward', fontsize=12)
 
         self._finalize_plot(plt)
 
