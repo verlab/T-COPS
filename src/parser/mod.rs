@@ -24,6 +24,8 @@ pub fn load_instance(path: &Path) -> Result<Instance, Error> {
 
     linker::link_parent_references(&mut instance);
 
+    validator::validate_hierarchy(&instance)?;
+
     let input_folder_path = Path::new(&path);
     let input_folder_path = input_folder_path.parent().unwrap_or(Path::new("./"));
 
@@ -99,7 +101,7 @@ VEHICLES_SECTION: id tmax start end
         // Verify linker results
         assert!(instance.nodes[0].parent_subgroup_ids.contains(&0));
         assert!(instance.nodes[1].parent_subgroup_ids.contains(&0));
-        assert_eq!(instance.subgroups[0].parent_cluster_id, 0);
+        assert!(instance.subgroups[0].parent_cluster_ids.contains(&0));
 
         // Verify folder_path
         let expected_folder = temp_file.path().parent().unwrap().to_str().unwrap();
@@ -127,5 +129,77 @@ INVALID_LINE_WITHOUT_ID
         assert!(result.is_err());
         let err_str = result.unwrap_err().to_string();
         assert!(err_str.contains("Error on line 11:"));
+    }
+
+    #[test]
+    fn test_load_instance_node_without_subgroup_fails() {
+        let content = "NAME: test_inst
+TYPE: TCOPS
+COMMENT: Node 1 is not in any subgroup
+DIMENSION: 2
+SUBGROUPS: 1
+CLUSTERS: 1
+VEHICLES: 1
+EDGE_WEIGHT_TYPE: EUC_2D
+NODE_COORD_SECTION: id profit x y
+0 0.0 1.0 2.0
+1 5.0 3.0 4.0
+SUBGROUP_SECTION: subgroup_id profit id-vertex-list
+0 10.0 0
+CLUSTER_SECTION: cluster_id id-subgroup-list
+0 0
+VEHICLES_SECTION: id tmax start end
+0 50.0 0 0
+";
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(content.as_bytes()).unwrap();
+
+        let result = load_instance(temp_file.path());
+        assert!(result.is_err());
+        let err_str = result.unwrap_err().to_string();
+        assert!(err_str.contains("Integrity error: Node ID 1 does not belong to any subgroup."));
+    }
+
+    #[test]
+    fn test_load_instance_subgroup_without_cluster_fails() {
+        let content = "NAME: test_inst
+TYPE: TCOPS
+COMMENT: Subgroup 1 is not in any cluster
+DIMENSION: 2
+SUBGROUPS: 2
+CLUSTERS: 1
+VEHICLES: 1
+EDGE_WEIGHT_TYPE: EUC_2D
+NODE_COORD_SECTION: id profit x y
+0 0.0 1.0 2.0
+1 5.0 3.0 4.0
+SUBGROUP_SECTION: subgroup_id profit id-vertex-list
+0 10.0 0
+1 20.0 1
+CLUSTER_SECTION: cluster_id id-subgroup-list
+0 0
+VEHICLES_SECTION: id tmax start end
+0 50.0 0 0
+";
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(content.as_bytes()).unwrap();
+
+        let result = load_instance(temp_file.path());
+        assert!(result.is_err());
+        let err_str = result.unwrap_err().to_string();
+        assert!(err_str.contains("Integrity error: Subgroup ID 1 does not belong to any cluster."));
+    }
+
+    #[test]
+    fn test_load_instance_teste_tcops() {
+        let path = Path::new("teste.tcops");
+        if path.exists() {
+            let result = load_instance(path);
+            assert!(result.is_ok());
+            let instance = result.unwrap();
+            assert_eq!(instance.nodes.len(), 7);
+            assert_eq!(instance.subgroups.len(), 6);
+            assert_eq!(instance.clusters.len(), 5);
+        }
     }
 }

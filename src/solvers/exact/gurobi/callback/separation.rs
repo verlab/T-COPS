@@ -178,4 +178,22 @@ mod tests {
         assert_eq!(bad_tours.len(), 1);
         assert_eq!(bad_tours[0].2, 1);
     }
+
+    #[test]
+    fn test_find_invalid_subtours_different_origin_destination() {
+        // Active edges forming route 0 -> 1 -> 2 -> 3 (start is 0, end is 3)
+        let active_edges = vec![(0, 1), (1, 2), (2, 3)];
+        let bad_tours = find_invalid_subtours(4, 0, 3, &active_edges);
+        // Valid main route connecting start 0 to end 3 -> no invalid subtours
+        assert!(bad_tours.is_empty());
+
+        // Route 0 -> 1 -> 3 (start 0, end 3), plus disconnected subtour 4 -> 5 -> 4
+        let active_edges = vec![(0, 1), (1, 3), (4, 5), (5, 4)];
+        let bad_tours = find_invalid_subtours(6, 0, 3, &active_edges);
+        assert_eq!(bad_tours.len(), 1);
+        let mut tour = bad_tours[0].clone();
+        tour.sort_unstable();
+        assert_eq!(tour, vec![4, 5]);
+    }
 }
+

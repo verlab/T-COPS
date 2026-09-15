@@ -12,6 +12,7 @@ pub fn solve<'a>(instance: &'a Instance, args: &Cli) -> Result<Solution<'a>, Sol
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     use std::path::PathBuf;
     use crate::cli::SolverMode;
     use crate::common::instance::{Cluster, Metric, Node, Point3, Subgroup, Vehicle};
@@ -25,7 +26,7 @@ mod tests {
                 Node { id: 1, point: Point3 { x: 3.0, y: 4.0, z: 0.0 }, ..Default::default() },
             ],
             subgroups: vec![
-                Subgroup { id: 0, profit: 15.0, node_ids: vec![1], parent_cluster_id: 0 },
+                Subgroup { id: 0, profit: 15.0, node_ids: vec![1], parent_cluster_ids: HashSet::from([0]) },
             ],
             clusters: vec![
                 Cluster { id: 0, subgroup_ids: vec![0] },

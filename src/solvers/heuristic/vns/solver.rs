@@ -82,6 +82,7 @@ pub fn solve<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     use crate::common::instance::{Cluster, Metric, Node, Point3, Subgroup, Vehicle};
     use crate::common::solution::SolutionStatus;
 
@@ -95,8 +96,8 @@ mod tests {
                 Node { id: 2, point: Point3 { x: 4.0, y: 0.0, z: 0.0 }, ..Default::default() },
             ],
             subgroups: vec![
-                Subgroup { id: 0, profit: 10.0, node_ids: vec![1], parent_cluster_id: 0 },
-                Subgroup { id: 1, profit: 20.0, node_ids: vec![2], parent_cluster_id: 1 },
+                Subgroup { id: 0, profit: 10.0, node_ids: vec![1], parent_cluster_ids: HashSet::from([0]) },
+                Subgroup { id: 1, profit: 20.0, node_ids: vec![2], parent_cluster_ids: HashSet::from([1]) },
             ],
             clusters: vec![
                 Cluster { id: 0, subgroup_ids: vec![0] },

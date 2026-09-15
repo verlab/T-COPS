@@ -229,8 +229,9 @@ fn get_clusters_visited(solution: &Solution) -> Vec<usize> {
         for &node_id in &route.path {
             let node = &solution.instance.nodes[node_id];
             for &sg_id in &node.parent_subgroup_ids {
-                let c_id = solution.instance.subgroups[sg_id].parent_cluster_id;
-                visited_clusters.insert(c_id);
+                for &c_id in &solution.instance.subgroups[sg_id].parent_cluster_ids {
+                    visited_clusters.insert(c_id);
+                }
             }
         }
     }
@@ -298,13 +299,13 @@ mod tests {
                     id: 0,
                     profit: 10.0,
                     node_ids: vec![0],
-                    parent_cluster_id: 100,
+                    parent_cluster_ids: HashSet::from([100]),
                 },
                 Subgroup {
                     id: 1,
                     profit: 20.0,
                     node_ids: vec![1],
-                    parent_cluster_id: 101,
+                    parent_cluster_ids: HashSet::from([101]),
                 },
             ],
             clusters: vec![

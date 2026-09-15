@@ -1,4 +1,4 @@
-use std::{collections::HashSet, time::Duration};
+use std::time::Duration;
 
 use good_lp::Solution as SolutionTrait;
 
@@ -23,15 +23,9 @@ pub fn parse_solution<'a, S: SolutionTrait>(
         }
     }
 
-    let visited_nodes: HashSet<usize> = routes
-        .iter()
-        .flat_map(|r| r.path.iter().copied())
-        .collect();
-
-    let total_score: f64 = instance.subgroups
-        .iter()
-        .filter(|sg| sg.node_ids.iter().all(|node_id| visited_nodes.contains(node_id)))
-        .map(|sg| sg.profit)
+    let total_score: f64 = (0..instance.subgroups.len())
+        .filter(|&s| solution.value(variables.z[s]) >= 0.5)
+        .map(|s| instance.subgroups[s].profit)
         .sum();
 
     let total_cost = routes.iter().map(|r| r.cost).sum();

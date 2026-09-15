@@ -1,4 +1,5 @@
 use clap::Parser;
+use cli::Cli;
 
 mod cli;
 mod common;
@@ -8,8 +9,6 @@ mod plotter;
 mod printer;
 mod runner;
 mod solvers;
-
-use cli::Cli;
 
 fn main() {
     let args = Cli::parse();

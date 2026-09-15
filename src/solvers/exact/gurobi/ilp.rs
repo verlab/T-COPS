@@ -77,9 +77,12 @@ impl<'a> Ilp<'a> {
         let variable = &self.variables;
         let instance = self.instance;
 
-        constraint::flow_conservation(model, variable, instance)?;
+        constraint::intermediate_flow_conservation(model, variable, instance)?;
         constraint::unique_visit(model, variable, instance)?;
-        constraint::logical_physical(model, variable, instance)?;
+        constraint::depot_flow(model, variable, instance)?;
+        constraint::depot_blocks(model, variable, instance)?;
+        constraint::logical_physical_z_leq_y(model, variable, instance)?;
+        constraint::logical_physical_y_leq_z(model, variable, instance)?;
         constraint::cluster(model, variable, instance)?;
         constraint::budget(model, variable, instance)?;
         constraint::logical_visit(model, variable, instance)?;
@@ -150,7 +153,7 @@ mod tests {
                 Node { id: 1, point: Point3 { x: 0.0, y: 3.0, z: 0.0 }, parent_subgroup_ids: HashSet::from([0]) },
             ],
             subgroups: vec![
-                Subgroup { id: 0, profit: 10.0, node_ids: vec![1], parent_cluster_id: 0 },
+                Subgroup { id: 0, profit: 10.0, node_ids: vec![1], parent_cluster_ids: HashSet::from([0]) },
             ],
             clusters: vec![
                 Cluster { id: 0, subgroup_ids: vec![0] },

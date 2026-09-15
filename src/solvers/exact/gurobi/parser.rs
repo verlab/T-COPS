@@ -1,4 +1,4 @@
-use std::{collections::HashSet, time::Duration};
+use std::time::Duration;
 
 use grb::prelude::*;
 
@@ -25,15 +25,15 @@ pub fn parse_solution<'a>(
         }
     }
 
-    let visited_nodes: HashSet<usize> = routes
-        .iter()
-        .flat_map(|r| r.path.iter().copied())
-        .collect();
-
-    let total_score: f64 = instance.subgroups
-        .iter()
-        .filter(|sg| sg.node_ids.iter().all(|node_id| visited_nodes.contains(node_id)))
-        .map(|sg| sg.profit)
+    let total_score: f64 = (0..instance.subgroups.len())
+        .filter_map(|s| {
+            let val = model.get_obj_attr(attr::X, &variables.z[s]).ok()?;
+            if val >= 0.5 {
+                Some(instance.subgroups[s].profit)
+            } else {
+                None
+            }
+        })
         .sum();
 
     let total_cost: f64 = routes.iter().map(|r| r.cost).sum();
@@ -127,6 +127,7 @@ fn get_route_node(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     use crate::common::instance::{Cluster, Metric, Node, Point3, Subgroup, Vehicle};
     use crate::solvers::exact::gurobi::variable;
 
@@ -139,7 +140,7 @@ mod tests {
                 Node { id: 1, point: Point3 { x: 0.0, y: 3.0, z: 0.0 }, ..Default::default() },
             ],
             subgroups: vec![
-                Subgroup { id: 0, profit: 10.0, node_ids: vec![1], parent_cluster_id: 0 },
+                Subgroup { id: 0, profit: 10.0, node_ids: vec![1], parent_cluster_ids: HashSet::from([0]) },
             ],
             clusters: vec![
                 Cluster { id: 0, subgroup_ids: vec![0] },

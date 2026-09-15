@@ -44,7 +44,7 @@ mod tests {
                 Node { id: 1, point: Point3 { x: 3.0, y: 4.0, z: 0.0 }, parent_subgroup_ids: HashSet::from([0]) },
             ],
             subgroups: vec![
-                Subgroup { id: 0, profit: 25.0, node_ids: vec![1], parent_cluster_id: 0 },
+                Subgroup { id: 0, profit: 25.0, node_ids: vec![1], parent_cluster_ids: HashSet::from([0]) },
             ],
             clusters: vec![
                 Cluster { id: 0, subgroup_ids: vec![0] },

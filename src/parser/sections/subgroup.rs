@@ -2,6 +2,7 @@ use crate::common::instance::{Node, Subgroup};
 use crate::parser::sections::common::handle_section;
 use crate::parser::utils::{LineTracker, parse_integer, parse_float};
 use crate::parser::validator::validate_item_id;
+use std::collections::HashSet;
 use std::io::{BufRead, Error, ErrorKind};
 
 const SUBGROUP_DATA_MIN_PARTS: usize = 2;
@@ -38,7 +39,7 @@ fn parse(parts: Vec<&str>, nodes: &[Node]) -> Result<Subgroup, Error> {
         id,
         profit,
         node_ids,
-        parent_cluster_id: 0,
+        parent_cluster_ids: HashSet::new(),
     })
 }
 

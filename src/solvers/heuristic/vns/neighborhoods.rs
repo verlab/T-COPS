@@ -17,12 +17,12 @@ pub fn evaluate_subgroup_insertion<'a>(
     state: &SearchState,
     subgroup_id: usize,
 ) -> Option<(Solution<'a>, SearchState)> {
-    let cluster_id = instance.subgroups[subgroup_id].parent_cluster_id;
-
-    if let Some(&locked_sg) = state.cluster_locks.get(&cluster_id)
-        && locked_sg != subgroup_id
-    {
-        return None;
+    for &cluster_id in &instance.subgroups[subgroup_id].parent_cluster_ids {
+        if let Some(&locked_sg) = state.cluster_locks.get(&cluster_id)
+            && locked_sg != subgroup_id
+        {
+            return None;
+        }
     }
 
     let mut trial_sol = solution.clone();
@@ -44,7 +44,9 @@ pub fn evaluate_subgroup_insertion<'a>(
     }
 
     trial_sol.total_score += instance.subgroups[subgroup_id].profit;
-    trial_state.cluster_locks.insert(cluster_id, subgroup_id);
+    for &cluster_id in &instance.subgroups[subgroup_id].parent_cluster_ids {
+        trial_state.cluster_locks.insert(cluster_id, subgroup_id);
+    }
     trial_state
         .subgroup_nodes_count
         .insert(subgroup_id, instance.subgroups[subgroup_id].node_ids.len());
@@ -99,14 +101,14 @@ pub fn drop_subgroup(
     state: &mut SearchState,
     subgroup_id: usize,
 ) {
-    let cluster_id = instance.subgroups[subgroup_id].parent_cluster_id;
-
     for &node_id in &instance.subgroups[subgroup_id].node_ids {
         remove_node_from_routes(instance, solution, state, node_id);
     }
 
     solution.total_score -= instance.subgroups[subgroup_id].profit;
-    state.cluster_locks.remove(&cluster_id);
+    for &cluster_id in &instance.subgroups[subgroup_id].parent_cluster_ids {
+        state.cluster_locks.remove(&cluster_id);
+    }
     state.subgroup_nodes_count.remove(&subgroup_id);
 }
 
@@ -151,6 +153,7 @@ fn remove_node_from_routes(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     use std::time::Duration;
     use crate::common::instance::{Cluster, Metric, Node, Point3, Subgroup, Vehicle};
     use crate::common::solution::{Route, SolutionStatus};
@@ -166,10 +169,10 @@ mod tests {
                 Node { id: 3, point: Point3 { x: 100.0, y: 100.0, z: 0.0 }, ..Default::default() },
             ],
             subgroups: vec![
-                Subgroup { id: 0, profit: 10.0, node_ids: vec![1], parent_cluster_id: 0 },
-                Subgroup { id: 1, profit: 20.0, node_ids: vec![2], parent_cluster_id: 0 },
-                Subgroup { id: 2, profit: 30.0, node_ids: vec![3], parent_cluster_id: 1 },
-                Subgroup { id: 3, profit: 40.0, node_ids: vec![0], parent_cluster_id: 2 }, // Depot node inside subgroup
+                Subgroup { id: 0, profit: 10.0, node_ids: vec![1], parent_cluster_ids: HashSet::from([0]) },
+                Subgroup { id: 1, profit: 20.0, node_ids: vec![2], parent_cluster_ids: HashSet::from([0]) },
+                Subgroup { id: 2, profit: 30.0, node_ids: vec![3], parent_cluster_ids: HashSet::from([1]) },
+                Subgroup { id: 3, profit: 40.0, node_ids: vec![0], parent_cluster_ids: HashSet::from([2]) }, // Depot node inside subgroup
             ],
             clusters: vec![
                 Cluster { id: 0, subgroup_ids: vec![0, 1] },
@@ -286,5 +289,23 @@ mod tests {
         remove_node_from_routes(&instance, &mut solution, &mut state, 0);
 
         assert_eq!(solution.routes[0].path, initial_path);
+    }
+
+    #[test]
+    fn test_evaluate_subgroup_insertion_multi_parent_cluster_locking() {
+        let mut instance = helper_create_test_instance();
+        // Make subgroup 0 belong to both cluster 0 and cluster 1
+        instance.subgroups[0].parent_cluster_ids = HashSet::from([0, 1]);
+
+        let (solution, state) = helper_create_initial_solution(&instance);
+
+        // Insert subgroup 0 -> should lock both cluster 0 and cluster 1
+        let (trial_sol, trial_state) = evaluate_subgroup_insertion(&instance, &solution, &state, 0).unwrap();
+        assert_eq!(trial_state.cluster_locks.get(&0), Some(&0));
+        assert_eq!(trial_state.cluster_locks.get(&1), Some(&0));
+
+        // Subgroup 2 belongs to cluster 1 -> trying to insert it now must fail
+        let res2 = evaluate_subgroup_insertion(&instance, &trial_sol, &trial_state, 2);
+        assert!(res2.is_none());
     }
 }

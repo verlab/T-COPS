@@ -32,10 +32,13 @@ fn initialize_empty_solution(instance: &'_ Instance) -> (Solution<'_>, SearchSta
         state.visited_nodes.insert(start);
         state.visited_nodes.insert(end);
 
-        for &sg_id in &instance.nodes[start].parent_subgroup_ids {
-            let c_id = instance.subgroups[sg_id].parent_cluster_id;
-            state.cluster_locks.insert(c_id, sg_id);
-            state.subgroup_nodes_count.insert(sg_id, 1);
+        for &depot in &[start, end] {
+            for &sg_id in &instance.nodes[depot].parent_subgroup_ids {
+                for &c_id in &instance.subgroups[sg_id].parent_cluster_ids {
+                    state.cluster_locks.insert(c_id, sg_id);
+                }
+                state.subgroup_nodes_count.insert(sg_id, 1);
+            }
         }
 
         let base_cost = instance.get_distance(start, end);
@@ -133,9 +136,9 @@ mod tests {
                 },
             ],
             subgroups: vec![
-                Subgroup { id: 0, profit: 5.0, node_ids: vec![0], parent_cluster_id: 0 },
-                Subgroup { id: 1, profit: 50.0, node_ids: vec![1], parent_cluster_id: 1 },
-                Subgroup { id: 2, profit: 20.0, node_ids: vec![2], parent_cluster_id: 2 },
+                Subgroup { id: 0, profit: 5.0, node_ids: vec![0], parent_cluster_ids: HashSet::from([0]) },
+                Subgroup { id: 1, profit: 50.0, node_ids: vec![1], parent_cluster_ids: HashSet::from([1]) },
+                Subgroup { id: 2, profit: 20.0, node_ids: vec![2], parent_cluster_ids: HashSet::from([2]) },
             ],
             clusters: vec![
                 Cluster { id: 0, subgroup_ids: vec![0] },
@@ -172,4 +175,43 @@ mod tests {
         assert!(solution.total_cost <= 30.0);
         assert!(state.visited_nodes.contains(&1));
     }
+
+    #[test]
+    fn test_initialize_and_build_different_origin_destination() {
+        use crate::common::instance::{Metric, Point3};
+        let instance = Instance {
+            name: "greedy_diff_endpoints".to_string(),
+            metric: Metric::Euc2d,
+            nodes: vec![
+                Node { id: 0, point: Point3 { x: 0.0, y: 0.0, z: 0.0 }, ..Default::default() },
+                Node { id: 1, point: Point3 { x: 0.0, y: 3.0, z: 0.0 }, ..Default::default() },
+                Node { id: 2, point: Point3 { x: 4.0, y: 0.0, z: 0.0 }, ..Default::default() },
+                Node { id: 3, point: Point3 { x: 4.0, y: 3.0, z: 0.0 }, ..Default::default() },
+            ],
+            subgroups: vec![
+                Subgroup { id: 0, profit: 10.0, node_ids: vec![1], parent_cluster_ids: HashSet::from([0]) },
+                Subgroup { id: 1, profit: 20.0, node_ids: vec![2], parent_cluster_ids: HashSet::from([1]) },
+            ],
+            clusters: vec![
+                Cluster { id: 0, subgroup_ids: vec![0] },
+                Cluster { id: 1, subgroup_ids: vec![1] },
+            ],
+            vehicles: vec![
+                Vehicle { id: 0, budget: 50.0, start_node_id: 0, end_node_id: 3 },
+            ],
+            ..Default::default()
+        };
+
+        let (init_sol, init_state) = initialize_empty_solution(&instance);
+        assert_eq!(init_sol.routes[0].path, vec![0, 3]);
+        assert_eq!(init_sol.total_cost, 5.0);
+        assert!(init_state.visited_nodes.contains(&0));
+        assert!(init_state.visited_nodes.contains(&3));
+
+        let (solution, _state) = build_greedy_solution(&instance).unwrap();
+        assert_eq!(solution.routes[0].path.first(), Some(&0));
+        assert_eq!(solution.routes[0].path.last(), Some(&3));
+        assert_eq!(solution.total_score, 30.0);
+    }
 }
+

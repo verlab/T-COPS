@@ -62,7 +62,7 @@ pub struct Subgroup {
     pub id: usize,
     pub profit: f64,
     pub node_ids: Vec<usize>,
-    pub parent_cluster_id: usize,
+    pub parent_cluster_ids: HashSet<usize>,
 }
 
 #[derive(Debug, Clone, Default)]
